@@ -4,5 +4,5 @@ package tutorial;
 
 message BasicMsg{
     required string nickname = 1;
-    required string message = 2;
+    required string text = 2;
 }
