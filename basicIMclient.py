@@ -7,7 +7,7 @@ import message_pb2
 
 
 class Client(object):
-    def __init__(self, port = 80, nickname, server, serverPort, startup = True, buffer_size = 1024):
+    def __init__(self, nickname, server, serverPort = 9999, port = 80, startup = True, buffer_size = 1024):
         self.__port = port
         self.__nickname = nickname
         self.__server = server
@@ -43,14 +43,16 @@ class Client(object):
             self.socket.close()                                                                                         
 
     def send(self, strMsg):
+        if not isinstance(strMsg, str):
+            raise TypeError('')
         if not self.socket:
             raise Exception('Sending msg failed: No connection.')
         
         msg = message_pb2.BasicMsg()
-        msg.nickname = self.nickname
+        msg.nickname = self.__nickname
         msg.text = strMsg
 
-        self.socket.send(msg)
+        self.socket.send(msg.SerializeToString())
     
     def recv(self, strMsg):
         if not self.socket:
@@ -86,4 +88,6 @@ if __name__ == "__main__":
     # socket.SOCK_STREAM - TCP
     
     
-    c = Client(args.servername, args.nickname)
+    c = Client(args.nickname, args.servername)
+    c.send('123')
+    c.shut()
