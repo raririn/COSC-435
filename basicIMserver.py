@@ -1,11 +1,12 @@
 import socket
 import select
 import logging
+import sys
 
 import message_pb2
 
 class Server(object):
-    def __init__(self, host = 'localhost', port = 9999, buffer_size = 1024, startup = True， queue_num = 5):
+    def __init__(self, host = 'localhost', port = 9999, buffer_size = 8, startup = True, queue_num = 5):
         if not (isinstance(host, str) and isinstance(port, int) and isinstance(buffer_size, int)):
             raise TypeError('')
         self.__host = host
@@ -54,7 +55,7 @@ class Server(object):
             raise Exception('')
 
         conn, addr = self.socket.accept()
-        rlist = [conn]
+        rlist = [sys.stdin, conn]
         wlist = []
         xlist = []
 
@@ -66,19 +67,22 @@ class Server(object):
 
             
             if conn in to_read:
-                try: 
-                    msg = message_pb2.BasicMsg()
+                try:
                     data = conn.recv(self.__BUFFER_SIZE)
                 except:
                     logging.error("No message received!")
-                else:
-                    if data:
-                        msg.ParseFromString(data)
-                        print(msg.text)
-                        data = None
-                    else:
-                        #conn.close()
-                        pass
+                
+                packagesize = int.from_bytes(data, 'big')
+                try:
+                    data = conn.recv(packagesize)
+                except:
+                    logging.error("No message received!")
+
+                if data:
+                    msg = message_pb2.BasicMsg()
+                    msg.ParseFromString(data)
+                    print(msg.text)
+                    data = None
             
 
             if addr:
