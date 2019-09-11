@@ -36,21 +36,24 @@ class Client(object):
 
         return s
 
-    def __run(self):
+    def run(self):
         if not self.socket:
-            return
+            raise Exception('')
         
-        conn, addr = self.socket.accept()
-        rlist = [sys.stdin, conn]
-        wlist = []
-        xlist = []
+        #conn, addr = self.socket.accept()
+        self.rlist = [sys.stdin, self.socket]
+        self.wlist = []
+        self.xlist = []
 
         while True:
-            to_read, to_write, exc = select.select(rlist, wlist, xlist)
+            to_read, to_write, exc = select.select(self.rlist, self.wlist, self.xlist)
 
-            if conn in to_read:
+            if self.socket in to_read:
                 self.recv()
         
+            if sys.stdin in to_read:
+                strMsg = input()
+                self.send(strMsg)
         
 
     def shut(self):
@@ -79,6 +82,23 @@ class Client(object):
             raise Exception('Receving msg failed: No connection.')
 
         try:
+            header = self.socket.recv(self.__BUFFER_SIZE)
+        except:
+            logging.error("No message received!")
+                   
+        packagesize = int.from_bytes(header, 'big')
+
+        try:
+            data = self.socket.recv(packagesize, socket.MSG_WAITALL)
+        except:
+            logging.error("No message received!")
+
+        if data:
+            msg = message_pb2.BasicMsg()
+            msg.ParseFromString(data)
+            print(msg.nickname + ': ' + msg.text)
+        '''
+        try:
             # Check https://stackoverflow.com/questions/2862071/how-large-should-my-recv-buffer-be-when-calling-recv-in-the-socket-library
             msg = self.socket.recv(self.__BUFFER_SIZE)
         except:
@@ -88,7 +108,7 @@ class Client(object):
             sys.stdout.write(msg.nickname + ':' + msg.text + '\n')
         else:
             raise Exception()
-      
+        '''
 
 
 if __name__ == "__main__":
@@ -97,7 +117,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', dest = 'servername', help = 'server', required = True)
     parser.add_argument('-n', dest = 'nickname', help = 'nickname', required = True)
     args = parser.parse_args()
-    print(args.servername, args.nickname)
+    #print(args.servername, args.nickname)
 
     # socket.socket(family, type[,protocal])
     # # # # # # #
@@ -106,5 +126,6 @@ if __name__ == "__main__":
     
     
     c = Client(args.nickname, args.servername)
-    c.send('123')
+    c.run()
+    #c.send('123')
     c.shut()

@@ -13,6 +13,8 @@ class Server(object):
         self.__port = port
         self.__BUFFER_SIZE = buffer_size
         self.__queue_num = queue_num
+        #self.client_list = []
+        self.msg_buffer = []
         if startup:
             self.socket = self.__initiate()
             self.__loop()
@@ -54,40 +56,78 @@ class Server(object):
         if not self.socket:
             raise Exception('')
 
-        conn, addr = self.socket.accept()
-        rlist = [sys.stdin, conn]
-        wlist = []
-        xlist = []
+        addr_list = []
 
+        #conn, addr = self.socket.accept()
+        
+        # These attributes are only defined and used in THIS scope.
+        self.rlist = [self.socket]
+        self.wlist = []
+        self.xlist = []
+
+        count = 0
         while True:
-            to_read, to_write, exc = select.select(rlist, wlist, xlist)
+            #print(count)
+            count = count + 1
+            #print(self.rlist, self.wlist, self.xlist)
+            to_read, to_write, exc = select.select(self.rlist, self.wlist, self.xlist)
 
-            if not to_read:
-                raise Exception('')
-
-            
-            if conn in to_read:
-                try:
-                    data = conn.recv(self.__BUFFER_SIZE)
-                except:
-                    logging.error("No message received!")
-                
-                packagesize = int.from_bytes(data, 'big')
-                try:
-                    data = conn.recv(packagesize)
-                except:
-                    logging.error("No message received!")
-
-                if data:
-                    msg = message_pb2.BasicMsg()
-                    msg.ParseFromString(data)
-                    print(msg.text)
-                    data = None
+            #if not to_read:
+            #    raise Exception('')
             
 
-            if addr:
-                print(str(addr))
-                addr = None
+            # Read handles
+            if self.socket in to_read:
+                conn, addr = self.socket.accept()
+                self.rlist.append(conn)
+                addr_list.append(addr)
+
+            for c in to_read:
+                if not c is self.socket:
+                    # header and data are both <bytes> object
+                    try:
+                        header = c.recv(self.__BUFFER_SIZE)
+                    except:
+                        logging.error("No message received!")
+                    
+                    packagesize = int.from_bytes(header, 'big')
+
+                    try:
+                        data = c.recv(packagesize, socket.MSG_WAITALL)
+                    except:
+                        logging.error("No message received!")
+
+                    if data:
+                        msg = message_pb2.BasicMsg()
+                        msg.ParseFromString(data)
+                        print(msg.text)
+
+                        self.msg_buffer = header + data
+                        self.wlist.append(c)
+                        header = None
+                        data = None
+                    
+                    else:
+                        if c in self.rlist:
+                            self.rlist.remove(c)
+                        c.close()
+
+            # Write handles
+            if to_write:
+                print("exc")
+                print(self.rlist)
+                for i in to_write:
+                    for j in self.rlist:
+                        if (not j is self.socket) and (not j is i):
+                            try:
+                                j.send(self.msg_buffer)
+                            except:
+                                #i.close()
+                                pass
+                self.msg_buffer = None
+                self.wlist = []
+
+            
             
             
 
