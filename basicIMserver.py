@@ -2,8 +2,16 @@ import socket
 import select
 import logging
 import sys
+import signal
 
 import message_pb2
+
+
+def handler(signum, frame):
+    global s
+    s.socket.close()
+    print("closed!")
+    sys.exit(0)
 
 class Server(object):
     def __init__(self, host = 'localhost', port = 9999, buffer_size = 8, startup = True, queue_num = 5):
@@ -18,12 +26,13 @@ class Server(object):
         if startup:
             self.socket = self.__initiate()
             self.__loop()
+        else:
+            self.inactive = True
 
     def run(self):
-        if startup:
-            return
-        self.socket = self.__initiate()
-        self.__loop()
+        if self.inactive:   
+            self.socket = self.__initiate()
+            self.__loop()
 
     def __initiate(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -132,4 +141,6 @@ class Server(object):
             
 
 if __name__ == "__main__":
-    s = Server()
+    s = Server(startup = False)
+    signal.signal(signal.SIGINT, handler)
+    s.run()

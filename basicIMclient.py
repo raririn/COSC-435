@@ -54,6 +54,7 @@ class Client(object):
             if sys.stdin in to_read:
                 strMsg = input()
                 self.send(strMsg)
+                print(self.__nickname + ': ' + strMsg, flush = True)
         
 
     def shut(self):
@@ -96,7 +97,7 @@ class Client(object):
         if data:
             msg = message_pb2.BasicMsg()
             msg.ParseFromString(data)
-            print(msg.nickname + ': ' + msg.text)
+            print(msg.nickname + ': ' + msg.text, flush = True)
         '''
         try:
             # Check https://stackoverflow.com/questions/2862071/how-large-should-my-recv-buffer-be-when-calling-recv-in-the-socket-library
