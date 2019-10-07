@@ -4,7 +4,7 @@ import logging
 import sys
 import signal
 
-import message_pb2
+#import message_pb2
 
 
 def handler(signum, frame):
@@ -107,9 +107,9 @@ class Server(object):
                         logging.error("No message received!")
 
                     if data:
-                        msg = message_pb2.BasicMsg()
-                        msg.ParseFromString(data)
-                        print(msg.text)
+                        #msg = message_pb2.BasicMsg()
+                        #msg.ParseFromString(data)
+                        #print(msg.text)
 
                         self.msg_buffer = header + data
                         self.wlist.append(c)
@@ -135,10 +135,6 @@ class Server(object):
                                 pass
                 self.msg_buffer = None
                 self.wlist = []
-
-            
-            
-            
 
 if __name__ == "__main__":
     s = Server(startup = False)
