@@ -5,10 +5,10 @@ import select
 import logging
 import hashlib
 
-from crypto.Cipher import AES
-from crypto.Hash import HMAC
-from crypto.Hash import SHA256
-from crypto import Random
+from Crypto.Cipher import AES
+from Crypto.Hash import HMAC, SHA256
+from Crypto import Random
+from Crypto.Util.Padding import pad, unpad
 
 import message_pb2
 
@@ -19,28 +19,50 @@ class wrappedMsg(object):
         self.key = key
         self.pack = self.encryptAndPack()
 
+    @staticmethod
+    def strToPaddedBytes(t):
+        return pad(bytes(t, 'utf-8'), 16)
+    
+    @staticmethod
+    def paddedBytesToStr(b):
+        return unpad(b, 16).decode('utf-8')
+
+    @staticmethod
+    def calHMAC(authKey: bytes, msg: bytes) -> bytes:
+        '''
+        Calculate the HMAC for a bytes message. 
+        '''
+        if not isinstance(msg, bytes):
+            raise TypeError('msg must be bytes.')
+        h = HMAC.new(authKey, digestmod = SHA256)
+        h.update(msg)
+        return h.digest()
     
     def __str__(self) -> str:
-        pass
+        return str(self._nickname) + ":" + str(self._strMsg)
     
-
     def encryptAndPack(self) -> message_pb2.BasicMsg:
         ret = message_pb2.BasicMsg()
         iv = Random.new().read(AES.block_size)
 
-        eCipher = AES.new(key, AES.MODE_CBC, iv)
-        ret.nickname = self._nickname
-        ret.text = self._strMsg
+        eCipher = AES.new(self.key, AES.MODE_CBC, iv)
+        ret.nickname = eCipher.encrypt(self.strToPaddedBytes(self._nickname))
+        ret.text = eCipher.encrypt(self.strToPaddedBytes(self._strMsg))
         ret.iv = iv
+
+        return ret
     
 
     @staticmethod
-    def decryptAndConstruct(packedMsg, key) -> wrappedMsg:
+    def decryptAndConstruct(packedMsg, key, encryptedHMAC):
         iv = packedMsg.iv
         dCipher = AES.new(key, AES.MODE_CBC, iv)
-        pass
 
     
+        plain_nickname = self.paddedBytesToStr(dCipher.decrypt(packedMsg.nickname))
+        plain_text =  self.paddedBytesToStr(dCipher.decrypt(packedMsg.text))
+        
+        return wrappedMsg(plain_nickname, plain_text, key)
 
 
 
@@ -53,6 +75,8 @@ class Client(object):
         self.__server = server
         self.__serverPort = serverPort
         self.__BUFFER_SIZE = buffer_size
+        if (not isinstance(confKey, bytes)) or (not isinstance(authKey, bytes)):
+            raise TypeError('Keys must be hashed and in bytes format.')
         self.confKey = confKey
         self.authKey = authKey
 
@@ -61,6 +85,12 @@ class Client(object):
             self.socket = self.__initiate()
         else:
             self.socket = None
+
+    @staticmethod
+    def calHashForKeys(k: str) -> bytes:
+        h = SHA256.new()
+        h.update(bytes(k, 'utf-8'))
+        return h.digest()
 
 
     def __initiate(self) -> socket.socket:
@@ -177,16 +207,14 @@ def main() -> None:
     parser.add_argument('-n', dest = 'nickname', help = 'nickname', required = True)
     parser.add_argument('-c', dest = 'confidentialitykey', help = 'confidentialitykey', required = True)
     parser.add_argument('-a', dest = 'authenticitykey', help = 'authenticitykey', required = True)
+    
     args = parser.parse_args()
     #print(args.servername, args.nickname)
 
-    # socket.socket(family, type[,protocal])
-    # # # # # # #
-    # socket.AF_INET - intercommunication between servers
-    # socket.SOCK_STREAM - TCP
+    confKey = Client.calHashForKeys(args.confidentialitykey)
+    authKey = Client.calHashForKeys(args.authenticitykey)    
     
-    
-    c = Client(args.nickname, args.servername, port=args.port)
+    c = Client(args.nickname, args.servername, port=args.port, authKey = authKey, confKey = confKey)
     c.run()
     #c.send('123')
     c.shut()
@@ -194,3 +222,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+#%%

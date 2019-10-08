@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='message.proto',
   package='tutorial',
   syntax='proto2',
-  serialized_pb=_b('\n\rmessage.proto\x12\x08tutorial\"6\n\x08\x42\x61sicMsg\x12\x10\n\x08nickname\x18\x01 \x02(\t\x12\x0c\n\x04text\x18\x02 \x02(\t\x12\n\n\x02iv\x18\x03 \x02(\t')
+  serialized_pb=_b('\n\rmessage.proto\x12\x08tutorial\"6\n\x08\x42\x61sicMsg\x12\x10\n\x08nickname\x18\x01 \x02(\t\x12\x0c\n\x04text\x18\x02 \x02(\t\x12\n\n\x02iv\x18\x03 \x02(\x0c')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -36,21 +36,21 @@ _BASICMSG = _descriptor.Descriptor(
     _descriptor.FieldDescriptor(
       name='nickname', full_name='tutorial.BasicMsg.nickname', index=0,
       number=1, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
       name='text', full_name='tutorial.BasicMsg.text', index=1,
       number=2, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
       name='iv', full_name='tutorial.BasicMsg.iv', index=2,
-      number=3, type=9, cpp_type=9, label=2,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      number=3, type=12, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
